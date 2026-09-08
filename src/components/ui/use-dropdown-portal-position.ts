@@ -4,12 +4,13 @@ import { useLayoutEffect, useState, type RefObject } from "react";
 
 import {
   DROPDOWN_GAP_PX,
+  DROPDOWN_MAX_HEIGHT_PX,
+  dropdownVerticalPosition,
+  type DropdownPlacement,
   type DropdownPortalPosition,
 } from "@/components/ui/dropdown-styles";
 
 const VIEWPORT_PADDING_PX = 16;
-
-type DropdownPlacement = "bottom" | "top";
 
 type UseDropdownPortalPositionOptions = {
   /** Use trigger width as min (and optionally max) width. */
@@ -18,7 +19,7 @@ type UseDropdownPortalPositionOptions = {
   lockTriggerWidth?: boolean;
   gapPx?: number;
   align?: "left" | "right";
-  /** Open below (default), above, or flip up when below does not fit. */
+  /** Flip up when below does not fit (default), or pin to one side. */
   placement?: DropdownPlacement | "auto";
   /** Panel height used by `placement: "auto"` to decide whether it fits. */
   panelHeightPx?: number;
@@ -28,37 +29,6 @@ type UseDropdownPortalPositionOptions = {
    */
   panelWidthPx?: number;
 };
-
-type ResolvePlacementInput = {
-  placement: DropdownPlacement | "auto";
-  panelHeightPx: number;
-  triggerTop: number;
-  triggerBottom: number;
-  viewportHeight: number;
-  gapPx: number;
-  paddingPx: number;
-};
-
-/** Flips an `auto` panel above the trigger when it would overflow below. */
-function resolvePlacement({
-  placement,
-  panelHeightPx,
-  triggerTop,
-  triggerBottom,
-  viewportHeight,
-  gapPx,
-  paddingPx,
-}: ResolvePlacementInput): DropdownPlacement {
-  if (placement !== "auto") {
-    return placement;
-  }
-
-  const spaceBelow = viewportHeight - triggerBottom - gapPx - paddingPx;
-  const spaceAbove = triggerTop - gapPx - paddingPx;
-  return spaceBelow < panelHeightPx && spaceAbove > spaceBelow
-    ? "top"
-    : "bottom";
-}
 
 /**
  * Positions a fixed portal dropdown under/above a trigger; tracks scroll/resize.
@@ -75,8 +45,8 @@ export function useDropdownPortalPosition(
     lockTriggerWidth = false,
     gapPx = DROPDOWN_GAP_PX,
     align = "left",
-    placement = "bottom",
-    panelHeightPx = 0,
+    placement = "auto",
+    panelHeightPx = DROPDOWN_MAX_HEIGHT_PX,
     panelWidthPx = 0,
   } = options;
   const [position, setPosition] = useState<DropdownPortalPosition | null>(null);
@@ -118,7 +88,7 @@ export function useDropdownPortalPosition(
               ),
             };
 
-      const resolved = resolvePlacement({
+      const vertical = dropdownVerticalPosition({
         placement,
         panelHeightPx,
         triggerTop: rect.top,
@@ -128,18 +98,8 @@ export function useDropdownPortalPosition(
         paddingPx: VIEWPORT_PADDING_PX,
       });
 
-      if (resolved === "top") {
-        setPosition({
-          bottom: window.innerHeight - rect.top + gapPx,
-          ...horizontal,
-          minWidth,
-          maxWidth,
-        });
-        return;
-      }
-
       setPosition({
-        top: rect.bottom + gapPx,
+        ...vertical,
         ...horizontal,
         minWidth,
         maxWidth,

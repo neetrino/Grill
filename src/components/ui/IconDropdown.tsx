@@ -18,6 +18,7 @@ import {
   DROPDOWN_PANEL_PORTAL_CLASS,
   dropdownPanelStateClass,
   dropdownPortalStyle,
+  type DropdownPlacement,
 } from "@/components/ui/dropdown-styles";
 import { useDropdownPortalPosition } from "@/components/ui/use-dropdown-portal-position";
 
@@ -26,8 +27,8 @@ type IconDropdownProps = {
   trigger: React.ReactNode;
   children: React.ReactNode;
   triggerClassName?: string;
-  /** Where the menu opens relative to the trigger. Default: below. */
-  menuPlacement?: "bottom" | "top";
+  /** Where the menu opens relative to the trigger. Default: flip when needed. */
+  menuPlacement?: DropdownPlacement | "auto";
   /** Horizontal alignment of the panel under the trigger. Default: right. */
   menuAlign?: "left" | "right";
 };
@@ -44,7 +45,7 @@ export function IconDropdown({
   trigger,
   children,
   triggerClassName,
-  menuPlacement = "bottom",
+  menuPlacement = "auto",
   menuAlign = "right",
 }: IconDropdownProps) {
   const canPortal = useSyncExternalStore(subscribeNoop, () => true, () => false);
