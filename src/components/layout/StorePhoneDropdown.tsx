@@ -15,7 +15,7 @@ import {
   dropdownPortalStyle,
   dropdownVerticalPosition,
 } from "@/components/ui/dropdown-styles";
-import { phoneDigits, telHref, whatsappHref } from "@/lib/phone";
+import { buildPhoneMenuItems, telHref, whatsappHref } from "@/lib/phone";
 
 type StorePhoneDropdownProps = {
   phones: readonly string[];
@@ -31,11 +31,6 @@ type MenuPosition = {
   left: number;
   minWidth: number;
   maxWidth: number;
-};
-
-type PhoneMenuItem = {
-  phone: string;
-  channel: "phone" | "whatsapp";
 };
 
 const VIEWPORT_PADDING = 16;
@@ -81,32 +76,6 @@ const LIGHT_VARIANT_STYLES = {
   },
 } as const;
 
-/** Builds dropdown rows: WhatsApp numbers first, then remaining call-only phones. */
-function buildPhoneMenuItems(
-  phones: readonly string[],
-  whatsappPhones: readonly string[],
-): PhoneMenuItem[] {
-  const [, ...rest] = phones;
-  const seen = new Set<string>();
-  const items: PhoneMenuItem[] = [];
-
-  for (const phone of whatsappPhones) {
-    const key = phoneDigits(phone);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    items.push({ phone, channel: "whatsapp" });
-  }
-
-  for (const phone of rest) {
-    const key = phoneDigits(phone);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    items.push({ phone, channel: "phone" });
-  }
-
-  return items;
-}
-
 export function StorePhoneDropdown({
   phones,
   whatsappPhones = [],
@@ -123,8 +92,9 @@ export function StorePhoneDropdown({
   const menuRef = useRef<HTMLUListElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [primary] = phones;
+  // The primary number is the trigger link, so it only reappears as WhatsApp.
   const menuItems = useMemo(
-    () => buildPhoneMenuItems(phones, whatsappPhones),
+    () => buildPhoneMenuItems(phones.slice(1), whatsappPhones),
     [phones, whatsappPhones],
   );
   const isFooter = variant === "footer";

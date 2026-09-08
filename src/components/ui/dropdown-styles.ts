@@ -28,6 +28,9 @@ export const DROPDOWN_PANEL_CLOSED_CLASS =
 
 export const DROPDOWN_OPTION_CLASS = "dropdown-option";
 
+/** Option with a leading icon: row layout instead of the default block. */
+export const DROPDOWN_OPTION_ROW_CLASS = "dropdown-option--row";
+
 export const DROPDOWN_OPTION_SELECTED_CLASS = "dropdown-option--selected";
 
 export type DropdownPlacement = "bottom" | "top";
