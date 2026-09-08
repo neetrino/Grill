@@ -39,6 +39,7 @@ export function MobileHeaderPhoneDropdown({
     <IconDropdown
       label={label}
       triggerClassName={triggerClassName}
+      closeOnScroll
       trigger={
         <Phone
           className="size-4.5 min-[390px]:size-5"

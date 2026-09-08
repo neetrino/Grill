@@ -31,10 +31,15 @@ type IconDropdownProps = {
   menuPlacement?: DropdownPlacement | "auto";
   /** Horizontal alignment of the panel under the trigger. Default: right. */
   menuAlign?: "left" | "right";
+  /** Close as soon as the page scrolls instead of following the trigger. */
+  closeOnScroll?: boolean;
 };
 
 /** Bridges the gap between trigger and panel so hover does not flicker. */
 const HOVER_CLOSE_DELAY_MS = 120;
+
+/** Ignores the stray scroll events fired while the panel is opening. */
+const CLOSE_ON_SCROLL_THRESHOLD_PX = 8;
 
 function subscribeNoop(): () => void {
   return () => undefined;
@@ -47,6 +52,7 @@ export function IconDropdown({
   triggerClassName,
   menuPlacement = "auto",
   menuAlign = "right",
+  closeOnScroll = false,
 }: IconDropdownProps) {
   const canPortal = useSyncExternalStore(subscribeNoop, () => true, () => false);
   const [open, setOpen] = useState(false);
@@ -57,6 +63,7 @@ export function IconDropdown({
   const panelRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openScrollYRef = useRef(0);
   const menuId = useId();
   const menuPosition = useDropdownPortalPosition(mounted, triggerRef, {
     matchTriggerWidth: false,
@@ -81,6 +88,7 @@ export function IconDropdown({
   const openMenu = useCallback((): void => {
     clearCloseTimer();
     clearUnmountTimer();
+    openScrollYRef.current = window.scrollY;
     setOpen(true);
     setMounted(true);
     requestAnimationFrame(() => {
@@ -115,6 +123,19 @@ export function IconDropdown({
     openMenu();
   }
 
+  /** Touch taps emit compatibility mouse events; only real hover may open. */
+  function handlePointerEnter(event: React.PointerEvent): void {
+    if (event.pointerType === "mouse") {
+      openMenu();
+    }
+  }
+
+  function handlePointerLeave(event: React.PointerEvent): void {
+    if (event.pointerType === "mouse") {
+      scheduleClose();
+    }
+  }
+
   useEffect(() => {
     return () => {
       clearCloseTimer();
@@ -147,14 +168,33 @@ export function IconDropdown({
       closeMenu();
     }
 
+    function handleScroll(event: Event): void {
+      const target = event.target;
+      if (target instanceof Node && panelRef.current?.contains(target)) {
+        return;
+      }
+      const scrolled = Math.abs(window.scrollY - openScrollYRef.current);
+      if (scrolled < CLOSE_ON_SCROLL_THRESHOLD_PX) {
+        return;
+      }
+      closeMenu();
+    }
+
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown, true);
+    if (closeOnScroll) {
+      window.addEventListener("scroll", handleScroll, {
+        capture: true,
+        passive: true,
+      });
+    }
 
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown, true);
+      window.removeEventListener("scroll", handleScroll, true);
     };
-  }, [open, closeMenu]);
+  }, [open, closeMenu, closeOnScroll]);
 
   const panel =
     canPortal && mounted && menuPosition
@@ -166,8 +206,8 @@ export function IconDropdown({
             aria-label={label}
             className={`${DROPDOWN_PANEL_PORTAL_CLASS} min-w-40 overflow-hidden ${dropdownPanelStateClass(visible)}`}
             style={dropdownPortalStyle(menuPosition)}
-            onMouseEnter={openMenu}
-            onMouseLeave={scheduleClose}
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
           >
             <div
               onClick={(event) => {
@@ -205,8 +245,8 @@ export function IconDropdown({
     <div
       ref={rootRef}
       className="relative inline-flex items-center"
-      onMouseEnter={openMenu}
-      onMouseLeave={scheduleClose}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
     >
       <button
         ref={triggerRef}
@@ -220,7 +260,12 @@ export function IconDropdown({
         aria-expanded={open}
         aria-controls={menuId}
         onClick={toggleMenu}
-        onFocus={openMenu}
+        onFocus={(event) => {
+          // Tapping also focuses the trigger; only keyboard focus opens.
+          if (event.target.matches(":focus-visible")) {
+            openMenu();
+          }
+        }}
       >
         {trigger}
       </button>
