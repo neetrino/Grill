@@ -28,7 +28,57 @@ export const DROPDOWN_PANEL_CLOSED_CLASS =
 
 export const DROPDOWN_OPTION_CLASS = "dropdown-option";
 
+/** Option with a leading icon: row layout instead of the default block. */
+export const DROPDOWN_OPTION_ROW_CLASS = "dropdown-option--row";
+
 export const DROPDOWN_OPTION_SELECTED_CLASS = "dropdown-option--selected";
+
+export type DropdownPlacement = "bottom" | "top";
+
+export type ResolveDropdownPlacementInput = {
+  /** `"auto"` flips the panel above the trigger when it overflows below. */
+  placement: DropdownPlacement | "auto";
+  /** Expected panel height (usually its max height, since panels scroll). */
+  panelHeightPx: number;
+  triggerTop: number;
+  triggerBottom: number;
+  viewportHeight: number;
+  gapPx: number;
+  paddingPx: number;
+};
+
+/** Picks the side an `auto` panel opens to, based on free viewport space. */
+function resolveDropdownPlacement({
+  placement,
+  panelHeightPx,
+  triggerTop,
+  triggerBottom,
+  viewportHeight,
+  gapPx,
+  paddingPx,
+}: ResolveDropdownPlacementInput): DropdownPlacement {
+  if (placement !== "auto") {
+    return placement;
+  }
+
+  const spaceBelow = viewportHeight - triggerBottom - gapPx - paddingPx;
+  const spaceAbove = triggerTop - gapPx - paddingPx;
+  return spaceBelow < panelHeightPx && spaceAbove > spaceBelow
+    ? "top"
+    : "bottom";
+}
+
+/**
+ * Viewport-relative vertical offsets for a fixed panel. The panel is flipped
+ * above the trigger when it would not fit below.
+ */
+export function dropdownVerticalPosition(
+  input: ResolveDropdownPlacementInput,
+): { top?: number; bottom?: number } {
+  return resolveDropdownPlacement(input) === "top"
+    ? { bottom: input.viewportHeight - input.triggerTop + input.gapPx }
+    : { top: input.triggerBottom + input.gapPx };
+}
 
 export type DropdownPortalPosition = {
   /** Distance from viewport top (mutually exclusive with `bottom`). */

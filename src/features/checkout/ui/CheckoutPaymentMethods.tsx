@@ -86,7 +86,7 @@ export function CheckoutPaymentMethods({
                     {option.description ? (
                       <div
                         id={`payment-desc-${option.id}`}
-                        className="text-sm text-gray-600"
+                        className="hidden text-sm text-gray-600 lg:block"
                       >
                         {option.description}
                       </div>
@@ -113,7 +113,7 @@ export function CheckoutPaymentMethods({
                       {option.description ? (
                         <div
                           id={`payment-desc-${option.id}`}
-                          className="min-w-0 text-sm text-gray-600"
+                          className="hidden min-w-0 text-sm text-gray-600 lg:block"
                         >
                           {option.description}
                         </div>

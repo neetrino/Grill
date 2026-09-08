@@ -18,7 +18,9 @@ import {
 } from "@/features/products/domain/customization";
 import { minOrderQuantityForSlug } from "@/features/products/domain/min-order-quantity";
 import { ProductAddonChecklist } from "@/features/products/ui/ProductAddonChecklist";
-import { ProductExclusionsAccordion } from "@/features/products/ui/ProductExclusionsAccordion";
+import { ProductAddonList } from "@/features/products/ui/ProductAddonList";
+import { ProductExclusionList } from "@/features/products/ui/ProductExclusionList";
+import { ProductModifierAccordion } from "@/features/products/ui/ProductModifierAccordion";
 import type { Locale } from "@/lib/i18n/config";
 import { convertAmount } from "@/lib/money/convert";
 import type { Currency } from "@/lib/money/currency";
@@ -277,15 +279,31 @@ export function ProductBuyBox({
           </p>
         ) : null}
 
-        <ProductExclusionsAccordion
-          exclusions={customization.exclusions}
-          selectedExclusionIds={modifiers.exclusionIds}
-          labels={{
-            exclusions: labels.exclusions,
-            removeModifier: labels.removeModifier,
-          }}
-          onToggleExclusion={toggleExclusion}
-        />
+        {customization.addons.length > 0 ? (
+          <ProductModifierAccordion label={labels.addons}>
+            <ProductAddonList
+              addons={customization.addons}
+              selectedAddonIds={modifiers.addonIds}
+              livePricing={livePricing}
+              formatPrice={(amount) =>
+                formatDisplay(amount, fxRate, currency, locale)
+              }
+              onToggle={toggleAddon}
+            />
+          </ProductModifierAccordion>
+        ) : null}
+
+        {customization.exclusions.length > 0 ? (
+          <ProductModifierAccordion label={labels.exclusions}>
+            <ProductExclusionList
+              exclusions={customization.exclusions}
+              selectedExclusionIds={modifiers.exclusionIds}
+              removeModifierLabel={labels.removeModifier}
+              onToggle={toggleExclusion}
+              columns="one"
+            />
+          </ProductModifierAccordion>
+        ) : null}
 
         {customization.optionGroups.length > 0 ? (
           <fieldset className="mt-5 flex flex-col gap-4 border-b border-[#f3f4f6] pb-5">
